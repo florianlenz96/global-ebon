@@ -18,6 +18,16 @@ param secondaryRegions array = [
   'westus'
 ]
 
+@description('The name of the SKU to use when creating the Front Door profile.')
+@allowed([
+  'Standard_AzureFrontDoor'
+  'Premium_AzureFrontDoor'
+])
+param frontDoorSkuName string = 'Standard_AzureFrontDoor'
+
+@description('The name of the Front Door endpoint to create. This must be globally unique.')
+param frontDoorEndpointName string
+
 @description('Combine primary region with secondary ones using concat function.')
 var locations = concat([primaryRegion], secondaryRegions)
 
@@ -40,7 +50,7 @@ resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2024-09-01-previ
   properties: {
     databaseAccountOfferType: 'Standard'
     publicNetworkAccess: 'Enabled'
-    enableFreeTier: true
+    enableFreeTier: false
     enableMultipleWriteLocations: false
     consistencyPolicy: {
       defaultConsistencyLevel: 'Session'
@@ -50,7 +60,7 @@ resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2024-09-01-previ
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = [for i in range(0, length(locations)): {
-  name: substring(replace('${locations[i]}sa${appName}', '-', ''), 0, min(24, length(appName)))
+  name: substring(replace('${locations[i]}sa${appName}', '-', ''), 0, min(24, length(replace('${locations[i]}sa${appName}', '-', ''))))
   location: locations[i]
   sku: {
     name: storageAccountType
@@ -76,6 +86,12 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = [for i in range(0, lengt
   name: '${appName}-func-${locations[i]}'
   location: locations[i]
   kind: 'functionapp'
+  dependsOn: [
+    hostingPlan[i]
+    storageAccount[i]
+    cosmosDbAccount
+    applicationInsights
+  ]
   identity: {
     type: 'SystemAssigned'
   }
@@ -85,11 +101,11 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = [for i in range(0, lengt
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${substring(replace('${locations[i]}sa${appName}', '-', ''), 0, min(24, length(appName)))};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount[i].listKeys().keys[0].value}'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${substring(replace('${locations[i]}sa${appName}', '-', ''), 0, min(24, length(replace('${locations[i]}sa${appName}', '-', ''))))};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount[i].listKeys().keys[0].value}'
         }
         {
           name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${substring(replace('${locations[i]}sa${appName}', '-', ''), 0, min(24, length(appName)))};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount[i].listKeys().keys[0].value}'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${substring(replace('${locations[i]}sa${appName}', '-', ''), 0, min(24, length(replace('${locations[i]}sa${appName}', '-', ''))))};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount[i].listKeys().keys[0].value}'
         }
         {
           name: 'WEBSITE_CONTENTSHARE'
@@ -111,6 +127,10 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = [for i in range(0, lengt
           name: 'Location'
           value: locations[i]
         }
+        {
+          name: 'CosmosDBConnection'
+          value: cosmosDbAccount.listConnectionStrings().connectionStrings[0].connectionString
+        }
       ]
       ftpsState: 'FtpsOnly'
       minTlsVersion: '1.2'
@@ -126,5 +146,76 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     Request_Source: 'rest'
+  }
+}
+
+resource frontDoorProfile 'Microsoft.Cdn/profiles@2021-06-01' = {
+  name: '${appName}-fd'
+  location: 'global'
+  sku: {
+    name: frontDoorSkuName
+  }
+}
+
+resource frontDoorEndpoint 'Microsoft.Cdn/profiles/afdEndpoints@2021-06-01' = {
+  name: frontDoorEndpointName
+  parent: frontDoorProfile
+  location: 'global'
+  properties: {
+    enabledState: 'Enabled'
+  }
+}
+
+resource frontDoorOriginGroup 'Microsoft.Cdn/profiles/originGroups@2021-06-01' = {
+  name: '${appName}-fd-backend'
+  parent: frontDoorProfile
+  properties: {
+    loadBalancingSettings: {
+      sampleSize: 4
+      successfulSamplesRequired: 3
+      additionalLatencyInMilliseconds: 0
+    }
+    healthProbeSettings: {
+      probePath: '/'
+      probeRequestType: 'HEAD'
+      probeProtocol: 'Http'
+      probeIntervalInSeconds: 100
+    }
+  }
+}
+
+resource frontDoorOrigin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = [for i in range(0, length(locations)): {
+  name: '${appName}-fd-origin-${locations[i]}'
+  parent: frontDoorOriginGroup
+  properties: {
+    hostName: functionApp[i].properties.defaultHostName
+    httpPort: 80
+    httpsPort: 443
+    originHostHeader: functionApp[i].properties.defaultHostName
+    priority: 1
+    weight: 1000
+  }
+}]
+
+resource frontDoorRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
+  name: 'default'
+  parent: frontDoorEndpoint
+  dependsOn: [
+    frontDoorOrigin
+  ]
+  properties: {
+    originGroup: {
+      id: frontDoorOriginGroup.id
+    }
+    supportedProtocols: [
+      'Http'
+      'Https'
+    ]
+    patternsToMatch: [
+      '/*'
+    ]
+    forwardingProtocol: 'HttpsOnly'
+    linkToDefaultDomain: 'Enabled'
+    httpsRedirect: 'Enabled'
   }
 }

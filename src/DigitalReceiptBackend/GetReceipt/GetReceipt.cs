@@ -7,9 +7,9 @@ namespace DigitalReceiptBackend.GetReceipt;
 
 public class GetReceipt
 {
-    [Function("GetReceipt")]
+    [Function(nameof(GetReceipt))]
     public IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Function, nameof(HttpMethod.Get), Route = "receipts/{ReceiptId}")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, nameof(HttpMethod.Get), Route = "receipts/{ReceiptId}")]
         HttpRequest req,
         [CosmosDBInput("receipts", "receipts", Connection = "CosmosDBConnection", Id = "{ReceiptId}", PartitionKey = "{ReceiptId}", PreferredLocations = "%Location%")]
         Receipt? receipt)

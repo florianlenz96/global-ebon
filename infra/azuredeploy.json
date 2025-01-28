@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.13.18514",
-      "templateHash": "18212243814576259002"
+      "templateHash": "2731984830925415374"
     }
   },
   "parameters": {
@@ -18,7 +18,7 @@
     },
     "primaryRegion": {
       "type": "string",
-      "defaultValue": "westeurope",
+      "defaultValue": "australiasoutheast",
       "metadata": {
         "description": "Primary region of the resources"
       }
@@ -26,16 +26,40 @@
     "storageAccountType": {
       "type": "string",
       "defaultValue": "Standard_LRS",
-      "allowedValues": ["Standard_LRS", "Standard_GRS", "Standard_RAGRS"],
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS"
+      ],
       "metadata": {
         "description": "Storage Account type"
       }
     },
     "secondaryRegions": {
       "type": "array",
-      "defaultValue": ["australiasoutheast", "westus"],
+      "defaultValue": [
+        "westeurope",
+        "westus"
+      ],
       "metadata": {
         "description": "Secondary regions of the resources"
+      }
+    },
+    "frontDoorSkuName": {
+      "type": "string",
+      "defaultValue": "Standard_AzureFrontDoor",
+      "allowedValues": [
+        "Standard_AzureFrontDoor",
+        "Premium_AzureFrontDoor"
+      ],
+      "metadata": {
+        "description": "The name of the SKU to use when creating the Front Door profile."
+      }
+    },
+    "frontDoorEndpointName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Front Door endpoint to create. This must be globally unique."
       }
     }
   },
@@ -66,7 +90,7 @@
       "properties": {
         "databaseAccountOfferType": "Standard",
         "publicNetworkAccess": "Enabled",
-        "enableFreeTier": true,
+        "enableFreeTier": false,
         "enableMultipleWriteLocations": false,
         "consistencyPolicy": {
           "defaultConsistencyLevel": "Session"
@@ -81,7 +105,7 @@
       },
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2022-05-01",
-      "name": "[substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName'))))]",
+      "name": "[substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''))))]",
       "location": "[variables('locations')[range(0, length(variables('locations')))[copyIndex()]]]",
       "sku": {
         "name": "[parameters('storageAccountType')]"
@@ -126,11 +150,11 @@
           "appSettings": [
             {
               "name": "AzureWebJobsStorage",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName'))))), '2022-05-01').keys[0].value)]"
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', '')))), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''))))), '2022-05-01').keys[0].value)]"
             },
             {
               "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName'))))), '2022-05-01').keys[0].value)]"
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', '')))), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''))))), '2022-05-01').keys[0].value)]"
             },
             {
               "name": "WEBSITE_CONTENTSHARE",
@@ -151,6 +175,10 @@
             {
               "name": "Location",
               "value": "[variables('locations')[range(0, length(variables('locations')))[copyIndex()]]]"
+            },
+            {
+              "name": "CosmosDBConnection",
+              "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', format('{0}-cosmos', parameters('appName'))), '2024-09-01-preview').connectionStrings[0].connectionString]"
             }
           ],
           "ftpsState": "FtpsOnly",
@@ -160,9 +188,12 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('appName')))]",
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', format('{0}-cosmos', parameters('appName')))]",
         "[resourceId('Microsoft.Web/serverfarms', format('{0}-hosting-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]]))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))))]"
+        "[resourceId('Microsoft.Web/serverfarms', format('{0}-hosting-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]]))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', '')))))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', '')))))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 0, min(24, length(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', '')))))]"
       ]
     },
     {
@@ -175,6 +206,95 @@
         "Application_Type": "web",
         "Request_Source": "rest"
       }
+    },
+    {
+      "type": "Microsoft.Cdn/profiles",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}-fd', parameters('appName'))]",
+      "location": "global",
+      "sku": {
+        "name": "[parameters('frontDoorSkuName')]"
+      }
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', format('{0}-fd', parameters('appName')), parameters('frontDoorEndpointName'))]",
+      "location": "global",
+      "properties": {
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', format('{0}-fd', parameters('appName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', format('{0}-fd', parameters('appName')), format('{0}-fd-backend', parameters('appName')))]",
+      "properties": {
+        "loadBalancingSettings": {
+          "sampleSize": 4,
+          "successfulSamplesRequired": 3,
+          "additionalLatencyInMilliseconds": 0
+        },
+        "healthProbeSettings": {
+          "probePath": "/",
+          "probeRequestType": "HEAD",
+          "probeProtocol": "Http",
+          "probeIntervalInSeconds": 100
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', format('{0}-fd', parameters('appName')))]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "frontDoorOrigin",
+        "count": "[length(range(0, length(variables('locations'))))]"
+      },
+      "type": "Microsoft.Cdn/profiles/originGroups/origins",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', format('{0}-fd', parameters('appName')), format('{0}-fd-backend', parameters('appName')), format('{0}-fd-origin-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[copyIndex()]]))]",
+      "properties": {
+        "hostName": "[reference(resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]])), '2021-03-01').defaultHostName]",
+        "httpPort": 80,
+        "httpsPort": 443,
+        "originHostHeader": "[reference(resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]])), '2021-03-01').defaultHostName]",
+        "priority": 1,
+        "weight": 1000
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', format('{0}-fd', parameters('appName')), format('{0}-fd-backend', parameters('appName')))]",
+        "[resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]]))]",
+        "[resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]]))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints/routes",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', format('{0}-fd', parameters('appName')), parameters('frontDoorEndpointName'), 'default')]",
+      "properties": {
+        "originGroup": {
+          "id": "[resourceId('Microsoft.Cdn/profiles/originGroups', format('{0}-fd', parameters('appName')), format('{0}-fd-backend', parameters('appName')))]"
+        },
+        "supportedProtocols": [
+          "Http",
+          "Https"
+        ],
+        "patternsToMatch": [
+          "/*"
+        ],
+        "forwardingProtocol": "HttpsOnly",
+        "linkToDefaultDomain": "Enabled",
+        "httpsRedirect": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', format('{0}-fd', parameters('appName')), parameters('frontDoorEndpointName'))]",
+        "frontDoorOrigin",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', format('{0}-fd', parameters('appName')), format('{0}-fd-backend', parameters('appName')))]"
+      ]
     }
   ]
 }
