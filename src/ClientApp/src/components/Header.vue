@@ -1,9 +1,13 @@
 <script setup>
-import { ref } from "vue";
+import { defineProps } from 'vue'
 
-const purchaseDate = ref(new Date().toLocaleDateString());
-const totalAmount = ref("$123.45");
-const shopName = ref("Global eCommerce Store");
+// Header expects shopName, purchaseDate, totalAmount as props
+const props = defineProps({
+  shopName: { type: String, default: '' },
+  purchaseDate: { type: String, default: '' },
+  // totalAmount can be a number; format in template
+  totalAmount: { type: Number, default: 0 }
+})
 </script>
 
 <template>
@@ -11,7 +15,7 @@ const shopName = ref("Global eCommerce Store");
     <h1>{{ shopName }}</h1>
     <div class="header-info">
       <span>Date of Purchase: {{ purchaseDate }}</span>
-      <span>Total Amount: {{ totalAmount }}</span>
+      <span>Total Amount: ${{ totalAmount.toFixed(2) }}</span>
     </div>
   </header>
 </template>

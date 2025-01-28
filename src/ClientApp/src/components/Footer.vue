@@ -1,11 +1,21 @@
+<script setup>
+import { defineProps } from "vue";
+
+const props = defineProps({
+  vatNumber: { type: String, default: "" },
+  address: { type: String, default: "" },
+  contactEmail: { type: String, default: "" },
+});
+</script>
+
 <template>
   <footer class="footer">
     <div class="footer-content">
-      <p>VAT Number: 123456789</p>
-      <p>Address: 123 Main street, EC 12345</p>
+      <p>VAT Number: {{ vatNumber }}</p>
+      <p>Address: {{ address }}</p>
       <p>
         Contact:
-        <a href="mailto:support@globale-bon.com">support@globale-bon.com</a>
+        <a :href="`mailto:${contactEmail}`">{{ contactEmail }}</a>
       </p>
       <div class="social-media">
         <a href="#" aria-label="Facebook">FB</a>
@@ -24,7 +34,6 @@
   width: 100%;
   padding: 2rem 1rem;
   background-color: var(--background-soft);
-  border-top: 1px solid var(--border-color);
   text-align: center;
   animation: fadeIn 1s ease-in-out;
 }

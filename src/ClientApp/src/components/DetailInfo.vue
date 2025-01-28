@@ -1,11 +1,12 @@
 <script setup>
-import { ref } from 'vue';
+import { defineProps } from "vue";
 
-const items = ref([
-  { name: 'Artisan Coffee Maker', quantity: 1, unitPrice: '$85.00', totalPrice: '$85.00' },
-  { name: 'Handcrafted Mug Set', quantity: 2, unitPrice: '$45.00', totalPrice: '$90.00' },
-  { name: 'Organic Tea Blend', quantity: 3, unitPrice: '$20.00', totalPrice: '$60.00' },
-]);
+const props = defineProps({
+  items: {
+    type: Array,
+    default: () => [],
+  },
+});
 </script>
 
 <template>
@@ -22,10 +23,10 @@ const items = ref([
       </thead>
       <tbody>
         <tr v-for="(item, index) in items" :key="index">
-          <td data-label="Product">{{ item.name }}</td>
+          <td data-label="Product">{{ item.productName }}</td>
           <td data-label="Quantity">{{ item.quantity }}</td>
-          <td data-label="Unit Price">{{ item.unitPrice }}</td>
-          <td data-label="Total Price">{{ item.totalPrice }}</td>
+          <td data-label="Unit Price">${{ Number(item.price).toFixed(2) }}</td>
+          <td data-label="Total Price">${{ Number(item.total).toFixed(2) }}</td>
         </tr>
       </tbody>
     </table>
@@ -53,7 +54,8 @@ table {
   overflow: hidden;
 }
 
-th, td {
+th,
+td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
@@ -69,8 +71,14 @@ tr:hover {
   background-color: rgba(107, 91, 149, 0.05);
 }
 
+/* Responsive Table for small screens */
 @media (max-width: 600px) {
-  table, thead, tbody, th, td, tr {
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
     display: block;
     background-color: rgba(107, 91, 149, 0.05);
   }
