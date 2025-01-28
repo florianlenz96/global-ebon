@@ -1,0 +1,180 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.33.13.18514",
+      "templateHash": "18212243814576259002"
+    }
+  },
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "ebon-app",
+      "metadata": {
+        "description": "Name of the application"
+      }
+    },
+    "primaryRegion": {
+      "type": "string",
+      "defaultValue": "westeurope",
+      "metadata": {
+        "description": "Primary region of the resources"
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": ["Standard_LRS", "Standard_GRS", "Standard_RAGRS"],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "secondaryRegions": {
+      "type": "array",
+      "defaultValue": ["australiasoutheast", "westus"],
+      "metadata": {
+        "description": "Secondary regions of the resources"
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "cosmosLocations",
+        "count": "[length(range(0, length(variables('locations'))))]",
+        "input": {
+          "locationName": "[variables('locations')[range(0, length(variables('locations')))[copyIndex('cosmosLocations')]]]",
+          "failoverPriority": "[range(0, length(variables('locations')))[copyIndex('cosmosLocations')]]",
+          "isZoneRedundant": false
+        }
+      }
+    ],
+    "locations": "[concat(createArray(parameters('primaryRegion')), parameters('secondaryRegions'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2024-09-01-preview",
+      "name": "[format('{0}-cosmos', parameters('appName'))]",
+      "location": "[parameters('primaryRegion')]",
+      "tags": {
+        "defaultExperience": "Core (SQL)",
+        "hidden-cosmos-mmspecial": ""
+      },
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "publicNetworkAccess": "Enabled",
+        "enableFreeTier": true,
+        "enableMultipleWriteLocations": false,
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "locations": "[variables('cosmosLocations')]"
+      }
+    },
+    {
+      "copy": {
+        "name": "storageAccount",
+        "count": "[length(range(0, length(variables('locations'))))]"
+      },
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-05-01",
+      "name": "[substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName'))))]",
+      "location": "[variables('locations')[range(0, length(variables('locations')))[copyIndex()]]]",
+      "sku": {
+        "name": "[parameters('storageAccountType')]"
+      },
+      "kind": "Storage",
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "defaultToOAuthAuthentication": true
+      }
+    },
+    {
+      "copy": {
+        "name": "hostingPlan",
+        "count": "[length(range(0, length(variables('locations'))))]"
+      },
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}-hosting-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[copyIndex()]])]",
+      "location": "[variables('locations')[range(0, length(variables('locations')))[copyIndex()]]]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "properties": {}
+    },
+    {
+      "copy": {
+        "name": "functionApp",
+        "count": "[length(range(0, length(variables('locations'))))]"
+      },
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[copyIndex()]])]",
+      "location": "[variables('locations')[range(0, length(variables('locations')))[copyIndex()]]]",
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-hosting-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]]))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName'))))), '2022-05-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[copyIndex()]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName'))))), '2022-05-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[copyIndex()]]))]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('appName'))), '2020-02-02').InstrumentationKey]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet-isolated"
+            },
+            {
+              "name": "Location",
+              "value": "[variables('locations')[range(0, length(variables('locations')))[copyIndex()]]]"
+            }
+          ],
+          "ftpsState": "FtpsOnly",
+          "minTlsVersion": "1.2"
+        },
+        "httpsOnly": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('appName')))]",
+        "[resourceId('Microsoft.Web/serverfarms', format('{0}-hosting-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]]))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', substring(replace(format('{0}sa{1}', variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]], parameters('appName')), '-', ''), 3, min(24, length(parameters('appName')))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[format('{0}-ai', parameters('appName'))]",
+      "location": "[parameters('primaryRegion')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "Request_Source": "rest"
+      }
+    }
+  ]
+}
