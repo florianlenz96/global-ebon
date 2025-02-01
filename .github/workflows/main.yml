@@ -1,11 +1,5 @@
 name: Deploy Infrastructure and Functions
 
-# Define regions once using a YAML anchor
-regions: &regions
-  - australiasoutheast
-  - westeurope
-  - westus
-
 env:
   PRIMARY_REGION: "australiasoutheast"
   SECONDARY_REGIONS: '["westeurope","westus"]'
@@ -75,7 +69,10 @@ jobs:
     needs: build_functions
     strategy:
       matrix:
-        region: *regions
+        region:
+          - australiasoutheast
+          - westeurope
+          - westus
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
