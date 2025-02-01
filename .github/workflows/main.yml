@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        region: [ ${{ env.PRIMARY_REGION }}, ${{ env.SECONDARY_REGIONS }} ]
+        region: [ "${{ env.PRIMARY_REGION }}", "${{ env.SECONDARY_REGIONS }}" ]
     steps:
       - name: Check out code
         uses: actions/checkout@v3
