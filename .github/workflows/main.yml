@@ -52,10 +52,10 @@ jobs:
           dotnet-version: "8.x"
 
       - name: Restore Dependencies
-        run: dotnet restore ./functions/FunctionApp.csproj
+        run: dotnet restore ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj
 
       - name: Build and Publish Function App
-        run: dotnet publish ./functions/FunctionApp.csproj --configuration Release --output ./publish
+        run: dotnet publish ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj --configuration Release --output ./publish
 
       - name: Create Zip Package
         run: zip -r functionapp.zip ./publish
