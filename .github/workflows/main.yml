@@ -37,7 +37,7 @@ jobs:
             --parameters appName=$APP_NAME \
                          frontDoorEndpointName=$APP_NAME \
                          primaryRegion=$PRIMARY_REGION \
-                         secondaryRegions="[${{ env.SECONDARY_REGIONS // ',' / '","' }}]"
+                         secondaryRegions=${{ format('["{}"]', replace(env.SECONDARY_REGIONS, ',', '","')) }}
           echo "Bicep deployment completed."
 
   deploy_function_apps:
