@@ -1,0 +1,89 @@
+name: Deploy Infra and Azure Functions
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AZURE_RESOURCE_GROUP: "myResourceGroup"          # <-- Change to your resource group
+  AZURE_SUBSCRIPTION_ID: "12345678-0000-0000-0000-123456789abc"  # <-- Change to your subscription ID
+  BICEP_FILE_PATH: "infra/azuredeploy.bicep"       # Path to the Bicep file
+  APP_NAME: "ebon-app"                             # This should match param appName in azuredeploy.bicep
+  PRIMARY_REGION: "australiasoutheast"             # Must match your bicep param
+  SECONDARY_REGIONS: "westeurope,westus"           # Comma-separated list of additional regions
+
+jobs:
+  deploy_infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Subscription
+        run: |
+          az account set --subscription $AZURE_SUBSCRIPTION_ID
+
+      - name: Deploy Bicep to Resource Group
+        run: |
+          az deployment group create \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --template-file $BICEP_FILE_PATH \
+            --parameters appName=$APP_NAME \
+                         frontDoorEndpointName=$APP_NAME \
+                         primaryRegion=$PRIMARY_REGION \
+                         secondaryRegions="[${{ env.SECONDARY_REGIONS // ',' / '","' }}]"
+          echo "Bicep deployment completed."
+
+  deploy_function_apps:
+    name: Deploy Azure Functions (Matrix)
+    needs: deploy_infrastructure
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        region: [ ${{ env.PRIMARY_REGION }}, ${{ env.SECONDARY_REGIONS }} ]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Subscription
+        run: |
+          az account set --subscription $AZURE_SUBSCRIPTION_ID
+
+      - name: Build Azure Function
+        run: dotnet build --configuration Release
+
+      - name: Publish Azure Function
+        run: dotnet publish --configuration Release -o ./publish
+
+      - name: Zip artifact
+        run: |
+          cd ./publish
+          zip -r ../functionapp.zip .
+          cd ..
+
+      - name: Deploy Azure Function
+        run: |
+          FUNCTION_APP_NAME="${{ env.APP_NAME }}-func-${{ matrix.region }}"
+          echo "Deploying to Function App: $FUNCTION_APP_NAME"
+          az functionapp deployment source config-zip \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --name $FUNCTION_APP_NAME \
+            --src functionapp.zip
+          echo "Deployment to $FUNCTION_APP_NAME finished."
