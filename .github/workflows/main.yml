@@ -63,16 +63,28 @@ jobs:
           name: functionapp-zip
           path: functionapp.zip
 
+  set_matrix:
+    name: Set Matrix for Deploy Functions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
+    steps:
+      - id: set_matrix
+        run: |
+          # Remove the surrounding brackets from SECONDARY_REGIONS
+          SECONDARY=${SECONDARY_REGIONS#\[}
+          SECONDARY=${SECONDARY%\]}
+          # Construct JSON array combining PRIMARY_REGION and secondary regions
+          MATRIX_JSON="{\"region\": [\"${PRIMARY_REGION}\", ${SECONDARY}]}"
+          echo "Matrix: $MATRIX_JSON"
+          echo "::set-output name=matrix::$MATRIX_JSON"
+
   deploy_functions:
     name: Deploy Azure Functions to Regions
     runs-on: ubuntu-latest
-    needs: build_functions
+    needs: [build_functions, set_matrix]
     strategy:
-      matrix:
-        region:
-          - australiasoutheast
-          - westeurope
-          - westus
+      matrix: ${{ fromJson(needs.set_matrix.outputs.matrix) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
