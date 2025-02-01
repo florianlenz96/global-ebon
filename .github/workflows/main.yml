@@ -1,5 +1,10 @@
 name: Deploy Infrastructure and Functions
 
+env:
+  PRIMARY_REGION: "australiasoutheast"
+  SECONDARY_REGIONS: '["westeurope","westus"]'
+  REGIONS: '["australiasoutheast","westeurope","westus"]'
+
 on:
   push:
     branches:
@@ -25,8 +30,8 @@ jobs:
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --template-file infra/azuredeploy.bicep \
             --parameters appName=ebon-app \
-                         primaryRegion=australiasoutheast \
-                         secondaryRegions='["westeurope","westus"]' \
+                         primaryRegion=${{ env.PRIMARY_REGION }} \
+                         secondaryRegions=${{ env.SECONDARY_REGIONS }} \
                          storageAccountType=Standard_LRS \
                          frontDoorSkuName=Standard_AzureFrontDoor \
                          frontDoorEndpointName=${{ secrets.FRONT_DOOR_ENDPOINT_NAME }}
@@ -65,7 +70,8 @@ jobs:
     needs: build_functions
     strategy:
       matrix:
-        region: [australiasoutheast, westeurope, westus]
+        # Reuse the centralized regions using the YAML anchor
+        region: ${{ env.REGIONS }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
