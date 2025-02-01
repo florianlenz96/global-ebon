@@ -3,6 +3,9 @@ name: Deploy Infrastructure and Functions
 env:
   PRIMARY_REGION: "australiasoutheast"
   SECONDARY_REGIONS: '["westeurope","westus"]'
+  APP_NAME: "ebon-app"
+  AZURE_FRONT_DOOR_ENDPOINT_NAME: "ebon-app-flz-test-1"
+  AZURE_RESOURCE_GROUP: "Flz-Test-Ebon"
 
 on:
   push:
@@ -26,14 +29,14 @@ jobs:
       - name: Deploy Bicep Template
         run: |
           az deployment group create \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --template-file infra/azuredeploy.bicep \
-            --parameters appName=ebon-app \
+            --parameters appName=${{ env.APP_NAME }} \
                          primaryRegion=${{ env.PRIMARY_REGION }} \
                          secondaryRegions=${{ env.SECONDARY_REGIONS }} \
                          storageAccountType=Standard_LRS \
                          frontDoorSkuName=Standard_AzureFrontDoor \
-                         frontDoorEndpointName=${{ secrets.FRONT_DOOR_ENDPOINT_NAME }}
+                         frontDoorEndpointName=${{ env.AZURE_FRONT_DOOR_ENDPOINT_NAME }}
 
   build_functions:
     name: Build and Package Azure Functions
@@ -46,7 +49,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: "7.x"
+          dotnet-version: "8.x"
 
       - name: Restore Dependencies
         run: dotnet restore ./functions/FunctionApp.csproj
@@ -102,9 +105,9 @@ jobs:
 
       - name: Deploy to Function App in ${{ matrix.region }}
         run: |
-          FUNCTION_APP_NAME="ebon-app-func-${{ matrix.region }}"
+          FUNCTION_APP_NAME="${{ env.APP_NAME }}-func-${{ matrix.region }}"
           echo "Deploying to Function App: $FUNCTION_APP_NAME"
           az functionapp deployment source config-zip \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --name $FUNCTION_APP_NAME \
             --src functionapp.zip
