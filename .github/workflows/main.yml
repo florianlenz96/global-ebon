@@ -2,7 +2,7 @@ name: Deploy Infrastructure and Functions
 
 env:
   PRIMARY_REGION: "australiasoutheast"
-  SECONDARY_REGIONS: '["westeurope","westus"]'
+  SECONDARY_REGIONS: ("westeurope","westus")
   APP_NAME: "ebon-app"
   AZURE_FRONT_DOOR_ENDPOINT_NAME: "ebon-app-flz-test-1"
   AZURE_RESOURCE_GROUP: "Flz-Test-Ebon"
