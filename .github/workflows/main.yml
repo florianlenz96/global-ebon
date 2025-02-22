@@ -94,6 +94,10 @@ jobs:
           name: functionapp-zip
           path: .
 
+      - name: List downloaded artifact
+        run: find . -maxdepth=2
+
+
       - name: Azure Login
         uses: azure/login@v1
         with:
