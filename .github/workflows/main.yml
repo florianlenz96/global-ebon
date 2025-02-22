@@ -92,7 +92,7 @@ jobs:
         uses: actions/download-artifact@v4.1.8
         with:
           name: functionapp-zip
-          path: .
+          path: functionapp.zip
 
       - name: Azure Login
         uses: azure/login@v1
