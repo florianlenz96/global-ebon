@@ -103,4 +103,4 @@ jobs:
         uses: Azure/functions-action@v1.5.1
         with:
           app-name: ${{ env.APP_NAME }}-func-${{ matrix.region }}
-          package: functionapp-zip.zip
+          package: ./functionapp-zip.zip
