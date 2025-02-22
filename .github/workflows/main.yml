@@ -2,7 +2,7 @@ name: Deploy Infrastructure and Functions
 
 env:
   PRIMARY_REGION: 'centralus'
-  SECONDARY_REGIONS: '["northeurope"]'
+  SECONDARY_REGIONS: '["northeurope", "australiacentral"]'
   APP_NAME: "basta-ebon-app"
   AZURE_FRONT_DOOR_ENDPOINT_NAME: "basta-global-ebon"
   AZURE_RESOURCE_GROUP: "basta-global-ebon"
@@ -33,7 +33,7 @@ jobs:
             --template-file infra/azuredeploy.bicep \
             --parameters appName=${{ env.APP_NAME }} \
                          primaryRegion='centralus' \
-                         secondaryRegions='("northeurope")' \
+                         secondaryRegions='("northeurope", "australiacentral")' \
                          storageAccountType=Standard_LRS \
                          frontDoorSkuName=Standard_AzureFrontDoor \
                          frontDoorEndpointName=${{ env.AZURE_FRONT_DOOR_ENDPOINT_NAME }}
