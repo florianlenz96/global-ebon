@@ -62,7 +62,7 @@ jobs:
       - name: Upload Function App Artifact
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: functionapp-zip
+          name: functionapp
           path: functionapp.zip
 
   set_matrix:
@@ -91,7 +91,7 @@ jobs:
       - name: Download Function App Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          name: functionapp-zip
+          name: functionapp
           path: .
 
       - name: Azure Login
