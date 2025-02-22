@@ -3,9 +3,9 @@ name: Deploy Infrastructure and Functions
 env:
   PRIMARY_REGION: 'northeurope'
   SECONDARY_REGIONS: '["eastus"]'
-  APP_NAME: "ebon-app"
-  AZURE_FRONT_DOOR_ENDPOINT_NAME: "ebon-app-flz-test-1"
-  AZURE_RESOURCE_GROUP: "basta-Flz-Test-Ebon"
+  APP_NAME: "basta-ebon-app"
+  AZURE_FRONT_DOOR_ENDPOINT_NAME: "basta-global-ebon"
+  AZURE_RESOURCE_GROUP: "basta-global-ebon"
 
 on:
   push:
