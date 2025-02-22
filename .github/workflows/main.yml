@@ -94,10 +94,6 @@ jobs:
           name: functionapp-zip
           path: .
 
-      - name: List downloaded artifact
-        run: find . -maxdepth=2
-
-
       - name: Azure Login
         uses: azure/login@v1
         with:
@@ -107,4 +103,4 @@ jobs:
         uses: Azure/functions-action@v1.5.1
         with:
           app-name: ${{ env.APP_NAME }}-func-${{ matrix.region }}
-          package: functionapp-zip/functionapp.zip
+          package: ./artifact/functionapp.zip
