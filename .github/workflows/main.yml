@@ -84,7 +84,7 @@ jobs:
   deploy_functions:
     name: Deploy Azure Functions to Regions
     runs-on: ubuntu-latest
-    needs: [build_functions, set_matrix]
+    needs: [build_functions, set_matrix, deploy_infra]
     strategy:
       matrix: ${{ fromJson(needs.set_matrix.outputs.matrix) }}
     steps:
