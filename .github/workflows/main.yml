@@ -54,10 +54,10 @@ jobs:
         run: dotnet restore ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj
 
       - name: Build and Publish Function App
-        run: dotnet publish ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj --configuration Release --output ./publish
+        run: dotnet publish ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj --configuration Release --output .
 
       - name: Create Zip Package
-        run: zip -r functionapp.zip ./publish
+        run: zip -r functionapp.zip .
 
       - name: Upload Function App Artifact
         uses: actions/upload-artifact@v4.6.0
