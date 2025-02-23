@@ -193,8 +193,6 @@ resource frontDoorOrigin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01
     httpPort: 80
     httpsPort: 443
     originHostHeader: functionApp[i].properties.defaultHostName
-    priority: 1
-    weight: 1000
   }
 }]
 
