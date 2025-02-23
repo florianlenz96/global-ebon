@@ -38,33 +38,6 @@ jobs:
                          frontDoorSkuName=Standard_AzureFrontDoor \
                          frontDoorEndpointName=${{ env.AZURE_FRONT_DOOR_ENDPOINT_NAME }}
 
-  build_functions:
-    name: Build and Package Azure Functions
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: "8.x"
-
-      - name: Restore Dependencies
-        run: dotnet restore ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj
-
-      - name: Build and Publish Function App
-        run: dotnet publish ./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj --configuration Release --output ./publish
-
-      - name: Create Zip Package
-        run: zip -r functionapp.zip ./publish
-
-      - name: Upload Function App Artifact
-        uses: actions/upload-artifact@v4.6.0
-        with:
-          name: functionapp
-          path: functionapp.zip
-
   set_matrix:
     name: Set Matrix for Deploy Functions
     runs-on: ubuntu-latest
@@ -84,23 +57,26 @@ jobs:
   deploy_functions:
     name: Deploy Azure Functions to Regions
     runs-on: ubuntu-latest
-    needs: [build_functions, set_matrix, deploy_infra]
+    needs: [set_matrix, deploy_infra]
     strategy:
       matrix: ${{ fromJson(needs.set_matrix.outputs.matrix) }}
     steps:
-      - name: Download Function App Artifact
-        uses: actions/download-artifact@v4.1.8
-        with:
-          name: functionapp
-          path: .
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Azure Login
-        uses: azure/login@v1
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          dotnet-version: '8.0.x'
+
+      - name: dotnet build and publish
+        run: |
+          dotnet restore
+          dotnet build --configuration Release
+          dotnet publish -c Release --property:PublishDir='./src/DigitalReceiptBackend/DigitalReceiptBackend.csproj' 
 
       - name: Deploy to Function App in ${{ matrix.region }}
         uses: Azure/functions-action@v1.5.1
         with:
           app-name: ${{ env.APP_NAME }}-func-${{ matrix.region }}
-          package: ./functionapp.zip
+          package: './src/DigitalReceiptBackend/DigitalReceiptBackend.csproj'
