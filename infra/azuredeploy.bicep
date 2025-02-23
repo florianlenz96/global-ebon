@@ -133,6 +133,7 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = [for i in range(0, lengt
         }
       ]
       ftpsState: 'FtpsOnly'
+      netFrameworkVersion: 'v8.0'
       minTlsVersion: '1.2'
     }
     httpsOnly: true
