@@ -181,7 +181,8 @@
               "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', format('{0}-cosmos', parameters('appName'))), '2024-09-01-preview').connectionStrings[0].connectionString]"
             }
           ],
-          "ftpsState": "FtpsOnly",
+          "ftpsState": "FtpsOnly"
+          "netFrameworkVersion": "v8.0"
           "minTlsVersion": "1.2"
         },
         "httpsOnly": true
