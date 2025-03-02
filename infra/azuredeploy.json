@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.13.18514",
-      "templateHash": "2731984830925415374"
+      "templateHash": "2483459903329337797"
     }
   },
   "parameters": {
@@ -181,8 +181,8 @@
               "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', format('{0}-cosmos', parameters('appName'))), '2024-09-01-preview').connectionStrings[0].connectionString]"
             }
           ],
-          "ftpsState": "FtpsOnly"
-          "netFrameworkVersion": "v8.0"
+          "ftpsState": "FtpsOnly",
+          "netFrameworkVersion": "v8.0",
           "minTlsVersion": "1.2"
         },
         "httpsOnly": true
@@ -262,9 +262,7 @@
         "hostName": "[reference(resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]])), '2021-03-01').defaultHostName]",
         "httpPort": 80,
         "httpsPort": 443,
-        "originHostHeader": "[reference(resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]])), '2021-03-01').defaultHostName]",
-        "priority": 1,
-        "weight": 1000
+        "originHostHeader": "[reference(resourceId('Microsoft.Web/sites', format('{0}-func-{1}', parameters('appName'), variables('locations')[range(0, length(variables('locations')))[range(0, length(variables('locations')))[copyIndex()]]])), '2021-03-01').defaultHostName]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Cdn/profiles/originGroups', format('{0}-fd', parameters('appName')), format('{0}-fd-backend', parameters('appName')))]",
